@@ -33,15 +33,6 @@ object KeyStoreUtil {
         }
     }
 
-    fun localText(dataToEncrypt : String, publicKeyBytesBase64: String, privateKeyBytesBase64 :String){
-        Log.d(TAG, "localText: $dataToEncrypt $publicKeyBytesBase64 $privateKeyBytesBase64}")
-        val encrypted = encryptRSAToString(dataToEncrypt, publicKeyBytesBase64)
-        Log.d(TAG, "localText: $encrypted")
-        val decrypted = decryptRSAToString(encrypted, privateKeyBytesBase64)
-        Log.d(TAG, "localText: $decrypted")
-
-    }
-
     private fun getKeyPair(): KeyPair? {
         var kp: KeyPair? = null
         try {
@@ -75,7 +66,6 @@ object KeyStoreUtil {
     }
 
     fun decryptRSAToString(encryptedBase64: String?, privateKey: String): String {
-        Log.d(TAG, "decryptRSAToString: $privateKey")
         var decryptedString = ""
         try {
             val keyFac = KeyFactory.getInstance("RSA")

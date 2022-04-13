@@ -1,6 +1,15 @@
 package com.mad.hippo.codes.messaging.presentation.conversation
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
+import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
+import android.util.Base64
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Image
@@ -28,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.LastBaseline
@@ -36,7 +46,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -45,14 +54,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.datastore.dataStore
 import androidx.navigation.NavController
-import com.google.firebase.firestore.remote.Datastore
 import com.mad.hippo.codes.messaging.domain.model.Message
 import com.mad.hippo.codes.messaging.domain.model.MessageType
 import com.mad.hippo.codes.messaging.domain.model.Response
@@ -61,6 +67,8 @@ import com.mad.hippo.codes.messaging.presentation.convervations.ConversationsVie
 import com.mad.hippo.codes.messaging.utils.*
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.getViewModel
+import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,6 +103,31 @@ fun ConversationScreen(
         id?.let { viewModel.getConversationMessages(it) }
     }
 
+    var imageUri by remember {
+        mutableStateOf<Uri?>(null)
+    }
+    val context = LocalContext.current
+    val bitmap =  remember {
+        mutableStateOf<Bitmap?>(null)
+    }
+
+    val launcher = rememberLauncherForActivityResult(contract =
+    ActivityResultContracts.GetContent()) { uri: Uri? ->
+        imageUri = uri
+        imageUri?.let {
+            if (Build.VERSION.SDK_INT < 28) {
+                bitmap.value = MediaStore.Images
+                    .Media.getBitmap(context.contentResolver,it)
+
+            } else {
+                val source = ImageDecoder
+                    .createSource(context.contentResolver,it)
+                bitmap.value = ImageDecoder.decodeBitmap(source)
+            }
+        }
+    }
+
+
     Scaffold(
         topBar = {
             OverviewTopBar()
@@ -114,21 +147,42 @@ fun ConversationScreen(
                     scrollState = scrollState
                 )
 
-                TextFormField(
-                    label = "Type message here",
-                    keyboardType = KeyboardType.Text
-                ) {
-                    viewModel.sendMessage(
-                        Message(
-                            textReceiver = KeyStoreUtil.encryptRSAToString(it, otherUser.publicKey),
-                            textSender = KeyStoreUtil.encryptRSAToString(it, publicKey),
-                            time = System.currentTimeMillis().toString(),
-                            senderId = viewModel.currentUser?.uid
-                                ?: "",
-                            type = MessageType.TEXT
-                        ), conversationId = id.toString()
-                    )
+                Row(Modifier.fillMaxWidth()){
+                    Button(onClick = { launcher.launch("image/*") }, Modifier.size(30.dp)) {
+
+                    }
+                    TextFormField(
+                        label = "Type message here",
+                        keyboardType = KeyboardType.Text
+                    ) {
+                        if(bitmap.value != null){
+                            //image
+                            viewModel.sendMessage(
+                                Message(
+                                    textReceiver = KeyStoreUtil.encryptRSAToString(it, otherUser.publicKey),
+                                    textSender = KeyStoreUtil.encryptRSAToString(it, publicKey),
+                                    time = System.currentTimeMillis().toString(),
+                                    senderId = viewModel.currentUser?.uid
+                                        ?: "",
+                                    type = MessageType.IMAGE,
+                                    image = String(Base64.encode(bitmap.value?.toByteArray(), Base64.DEFAULT))
+                                ), conversationId = id.toString()
+                            )
+                        }else{
+                            viewModel.sendMessage(
+                                Message(
+                                    textReceiver = KeyStoreUtil.encryptRSAToString(it, otherUser.publicKey),
+                                    textSender = KeyStoreUtil.encryptRSAToString(it, publicKey),
+                                    time = System.currentTimeMillis().toString(),
+                                    senderId = viewModel.currentUser?.uid
+                                        ?: "",
+                                    type = MessageType.TEXT
+                                ), conversationId = id.toString()
+                            )
+                        }
+                    }
                 }
+
 
 
             }
@@ -151,6 +205,13 @@ fun ConversationScreen(
     }
 
 
+}
+
+fun Bitmap.toByteArray():ByteArray{
+    ByteArrayOutputStream().apply {
+        compress(Bitmap.CompressFormat.JPEG,10,this)
+        return toByteArray()
+    }
 }
 
 @Composable
@@ -676,6 +737,12 @@ fun ClickableMessage(
         primary = isUserMe
     )
 
+    if(message.image.isNotEmpty()){
+        val imageBytes = Base64.decode(message.image, Base64.DEFAULT)
+        val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+        Image(bitmap = bitmap.asImageBitmap(), contentDescription ="" ,Modifier.width(width = 200.dp), contentScale = ContentScale.Fit)
+
+    }else{
     ClickableText(
         text = styledMessage,
         style = MaterialTheme.typography.bodyLarge.copy(color = LocalContentColor.current),
@@ -693,6 +760,8 @@ fun ClickableMessage(
                 }
         }
     )
+    }
+
 }
 
 private enum class Visibility {
