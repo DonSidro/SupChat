@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mad.hippo.codes.messaging.presentation.auth.AuthViewModel
@@ -36,7 +37,7 @@ fun AuthContent(
                 }
             ) {
                 Text(
-                    text = "SIGN_IN",
+                    text = stringResource(R.string.sign_in_text),
                     fontSize = 18.sp
                 )
             }
@@ -60,7 +61,7 @@ fun AuthContent(
                             Text(
                                 style = MaterialTheme.typography.button,
                                 color = MaterialTheme.colors.onSurface,
-                                text = "Google"
+                                text = stringResource(R.string.google)
                             )
                             Icon(
                                 tint = Color.Transparent,

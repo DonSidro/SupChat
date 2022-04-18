@@ -3,7 +3,7 @@ package com.mad.hippo.codes.messaging.presentation.profile
 import androidx.compose.material.Scaffold
 import androidx.compose.runtime.*
 import androidx.navigation.NavController
-import com.mad.hippo.codes.messaging.domain.model.Response
+import com.mad.hippo.codes.messaging.utils.Response
 import com.mad.hippo.codes.messaging.presentation.components.ProgressBar
 import com.mad.hippo.codes.messaging.presentation.navigation.Screen
 import com.mad.hippo.codes.messaging.presentation.profile.components.ProfileContent
@@ -18,7 +18,6 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = getViewModel()
 ) {
     var uid by remember { mutableStateOf(viewModel.getUID()) }
-
 
     Scaffold(
         topBar = {

@@ -15,12 +15,12 @@ class MainApplication : Application() {
             androidLogger()
             androidContext(this@MainApplication)
             modules(firebaseModule)
-            modules(firebaseRepositoryModule)
+            modules(repositoryModule)
             modules(useCaseModule)
             modules(profileViewModelModule)
             modules(authViewModelModule)
             modules(mainViewModelModule)
-            modules(overviewViewModelModule)
+            modules(conversationsViewModelModule)
         }
     }
 

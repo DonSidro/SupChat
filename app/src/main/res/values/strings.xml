@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">SupChat</string>
     <string name="client_id">1005719126928-rhm4hr54tfhc8j07s05ivlqaupgu5c4s.apps.googleusercontent.com</string>
+    <string name="auth_screen_title">AUTH_SCREEN</string>
+    <string name="google">Google</string>
+    <string name="sign_in_text">SIGN_IN</string>
 </resources>

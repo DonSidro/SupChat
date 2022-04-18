@@ -1,88 +1,151 @@
 package com.mad.hippo.codes.messaging.utils
 
-import android.content.Context
+import android.os.Build
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
 import android.util.Base64
 import android.util.Base64.decode
 import android.util.Log
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import androidx.annotation.RequiresApi
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.math.BigInteger
+import java.nio.charset.Charset
 import java.security.*
 import java.security.spec.KeySpec
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import javax.crypto.Cipher
+import javax.crypto.CipherInputStream
+import javax.crypto.CipherOutputStream
+import javax.security.auth.x500.X500Principal
+
 
 private const val TAG = "KeyStoreUtil"
 object KeyStoreUtil {
 
-    fun generateKeys(context: Context) {
-        // generate a new public/private key pair to test with (note. you should only do this once and keep them!)
-        val kp = getKeyPair()
-        val publicKey = kp!!.public
-        val publicKeyBytes = publicKey.encoded
-        val publicKeyBytesBase64 = String(Base64.encode(publicKeyBytes, Base64.DEFAULT))
-        val privateKey = kp.private
-        val privateKeyBytes = privateKey.encoded
-        val privateKeyBytesBase64 = String(Base64.encode(privateKeyBytes, Base64.DEFAULT))
+    private const val KEY_ALIAS =
+        "com.mad.hippo.codes.supchat.android.security.publickeycryptography.key"
+    private const val ANDROID_KEYSTORE = "AndroidKeyStore"
+    private const val TYPE_RSA = "RSA"
+    private const val CYPHER = "RSA/ECB/PKCS1Padding"
 
-       val dataStoreManager = DataStoreManager(context.baseDataStore)
-        CoroutineScope(Dispatchers.IO).launch {
-            dataStoreManager.editPreference(PRIVATE_KEY, privateKeyBytesBase64)
-            dataStoreManager.editPreference(PUBLIC_KEY, publicKeyBytesBase64)
-        }
-    }
 
-    private fun getKeyPair(): KeyPair? {
-        var kp: KeyPair? = null
+    @RequiresApi(Build.VERSION_CODES.M)
+    fun encryptString(toEncrypt: String, publicKey : String): String? {
         try {
-            val kpg = KeyPairGenerator.getInstance("RSA")
-            kpg.initialize(2048)
-            kp = kpg.generateKeyPair()
+            if (publicKey != null) {
+                val keyFac = KeyFactory.getInstance(TYPE_RSA)
+                val keySpec: KeySpec = X509EncodedKeySpec(decode(publicKey.trim { it <= ' ' }
+                    .toByteArray(), Base64.DEFAULT))
+                val key: Key = keyFac.generatePublic(keySpec)
+
+                // Encrypt the text
+                val input = Cipher.getInstance(CYPHER)
+                input.init(Cipher.ENCRYPT_MODE, key)
+                val outputStream = ByteArrayOutputStream()
+                val cipherOutputStream = CipherOutputStream(
+                    outputStream, input)
+                cipherOutputStream.write(toEncrypt.toByteArray(charset = Charset.defaultCharset()))
+                cipherOutputStream.close()
+                val vals: ByteArray = outputStream.toByteArray()
+                return Base64.encodeToString(vals, Base64.DEFAULT)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
+            return null
         }
-        return kp
+        return null
     }
 
-    fun encryptRSAToString(clearText: String, publicKey: String): String {
-        var encryptedBase64 = ""
+    @RequiresApi(Build.VERSION_CODES.M)
+    fun decryptString(encrypted: String): String {
         try {
-            val keyFac = KeyFactory.getInstance("RSA")
-            val keySpec: KeySpec = X509EncodedKeySpec(decode(publicKey.trim { it <= ' ' }
-                .toByteArray(), Base64.DEFAULT))
-            val key: Key = keyFac.generatePublic(keySpec)
-
-            // get an RSA cipher object and print the provider
-            val cipher = Cipher.getInstance("RSA/ECB/OAEPWITHSHA-256ANDMGF1PADDING")
-            // encrypt the plain text using the public key
-            cipher.init(Cipher.ENCRYPT_MODE, key)
-            val encryptedBytes = cipher.doFinal(clearText.toByteArray(charset("UTF-8")))
-            encryptedBase64 = String(Base64.encode(encryptedBytes, Base64.DEFAULT))
+            val privateKeyEntry = getPrivateKey()
+            if (privateKeyEntry != null) {
+                val privateKey = privateKeyEntry.privateKey
+                val output = Cipher.getInstance(CYPHER)
+                output.init(Cipher.DECRYPT_MODE, privateKey)
+                val cipherInputStream = CipherInputStream(
+                    ByteArrayInputStream(decode(encrypted, Base64.DEFAULT)), output)
+                val values: ArrayList<Byte> = ArrayList()
+                var nextByte: Int
+                while (cipherInputStream.read().also { nextByte = it } != -1) {
+                    values.add(nextByte.toByte())
+                }
+                val bytes = ByteArray(values.size)
+                for (i in bytes.indices) {
+                    bytes[i] = values[i]
+                }
+                return String(bytes, 0, bytes.size, Charset.defaultCharset())
+            }
         } catch (e: Exception) {
             e.printStackTrace()
+            return ""
         }
-        return encryptedBase64.replace("(\\r|\\n)".toRegex(), "")
+        return ""
     }
 
-    fun decryptRSAToString(encryptedBase64: String?, privateKey: String): String {
-        var decryptedString = ""
-        try {
-            val keyFac = KeyFactory.getInstance("RSA")
-            val keySpec: KeySpec = PKCS8EncodedKeySpec(decode(privateKey.trim { it <= ' ' }
-                .toByteArray(), Base64.DEFAULT))
-            val key: Key = keyFac.generatePrivate(keySpec)
-
-            // get an RSA cipher object and print the provider
-            val cipher = Cipher.getInstance("RSA/ECB/OAEPWITHSHA-256ANDMGF1PADDING")
-            // encrypt the plain text using the public key
-            cipher.init(Cipher.DECRYPT_MODE, key)
-            val encryptedBytes = decode(encryptedBase64, Base64.DEFAULT)
-            val decryptedBytes = cipher.doFinal(encryptedBytes)
-            decryptedString = String(decryptedBytes)
-        } catch (e: Exception) {
-            e.printStackTrace()
+    @RequiresApi(Build.VERSION_CODES.M)
+    fun getPublicKeyAsString(): String{
+        val privateKeyEntry = getPrivateKey()
+        if (privateKeyEntry != null) {
+            val publicKey = Base64.encode(privateKeyEntry.certificate.publicKey.encoded, Base64.DEFAULT)
+            return String(publicKey)
         }
-        return decryptedString
+        return ""
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun getPrivateKey(): KeyStore.PrivateKeyEntry? {
+        var ks = KeyStore.getInstance(ANDROID_KEYSTORE).apply {
+            load(null)
+        }
+
+        var entry = ks.getEntry(KEY_ALIAS, null)
+
+         if (entry == null) {
+             Log.d(TAG, "getPrivateKey: ")
+            try {
+                createKeys()
+                ks = KeyStore.getInstance(ANDROID_KEYSTORE)
+
+                ks.load(null)
+                entry = ks.getEntry(KEY_ALIAS, null)
+                if (entry == null) {
+                    return null
+                }
+            } catch (e: NoSuchProviderException) {
+                e.printStackTrace()
+                return null
+            } catch (e: InvalidAlgorithmParameterException) {
+                e.printStackTrace()
+                return null
+            }
+        }
+
+         if (entry !is KeyStore.PrivateKeyEntry) {
+            return null
+        }
+        return entry
+    }
+
+    /**
+     * Creates a public and private key and stores it using the Android Key Store, so that only
+     * this application will be able to access the keys.
+     */
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun createKeys() {
+        val spec = KeyGenParameterSpec.Builder(KEY_ALIAS,
+                KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY).run {
+            setCertificateSerialNumber(BigInteger.valueOf(1337))
+            setCertificateSubject(X500Principal("CN=$KEY_ALIAS"))
+            build()
+        }
+        val kpGenerator: KeyPairGenerator =
+            KeyPairGenerator.getInstance(TYPE_RSA,
+                ANDROID_KEYSTORE)
+        kpGenerator.initialize(spec)
+        kpGenerator.generateKeyPair()
     }
 }

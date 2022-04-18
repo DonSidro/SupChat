@@ -8,13 +8,11 @@ import androidx.compose.material.Scaffold
 import androidx.compose.runtime.*
 import androidx.navigation.NavController
 import com.mad.hippo.codes.messaging.domain.model.Conversation
-import com.mad.hippo.codes.messaging.domain.model.Message
-import com.mad.hippo.codes.messaging.domain.model.Response
+import com.mad.hippo.codes.messaging.utils.Response
 import com.mad.hippo.codes.messaging.presentation.convervations.components.ConversationItem
 import com.mad.hippo.codes.messaging.presentation.convervations.components.ConversationTopBar
 import com.mad.hippo.codes.messaging.presentation.navigation.Screen
 import org.koin.androidx.compose.getViewModel
-import kotlin.random.Random
 
 private const val TAG = "OverviewScreen"
 @Composable
@@ -40,7 +38,7 @@ fun ConversationsScreen (
             items(items = myList){ item ->
                 item?.let { it1 -> ConversationItem(conversation = it1){
                     var list = it1.userIDs.joinToString(separator = ",")
-                    navController.navigate(Screen.ConversationScreen.route + "/${it1.iD}"+"/${list}")
+                    navController.navigate(Screen.ChatScreen.route + "/${it1.iD}"+"/${list}")
                 } }
             }
         }

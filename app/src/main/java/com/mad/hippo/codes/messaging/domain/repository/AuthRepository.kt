@@ -2,8 +2,7 @@ package com.mad.hippo.codes.messaging.domain.repository
 
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseUser
-import com.mad.hippo.codes.messaging.domain.model.Response
-import com.mad.hippo.codes.messaging.domain.model.User
+import com.mad.hippo.codes.messaging.utils.Response
 import kotlinx.coroutines.flow.Flow
 
 interface AuthRepository {

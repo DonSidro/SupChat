@@ -1,4 +1,4 @@
-package com.mad.hippo.codes.messaging.domain.model
+package com.mad.hippo.codes.messaging.utils
 
 sealed class Response<out T> {
     object Loading: Response<Nothing>()

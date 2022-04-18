@@ -14,6 +14,7 @@ import com.mad.hippo.codes.messaging.domain.repository.FirestoreRepository
 import com.mad.hippo.codes.messaging.domain.use_case.*
 import com.mad.hippo.codes.messaging.presentation.MainViewModel
 import com.mad.hippo.codes.messaging.presentation.auth.AuthViewModel
+import com.mad.hippo.codes.messaging.presentation.chat.ChatViewModel
 import com.mad.hippo.codes.messaging.presentation.convervations.ConversationsViewModel
 import com.mad.hippo.codes.messaging.presentation.profile.ProfileViewModel
 import com.mad.hippo.codes.messaging.utils.DataStoreManager
@@ -21,20 +22,20 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
-val firebaseRepositoryModule = module {
+val repositoryModule = module {
 
-    fun provideRepository(firebaseAuth: FirebaseAuth): AuthRepository {
+    fun provideAuthRepository(firebaseAuth: FirebaseAuth): AuthRepository {
         return AuthRepositoryImpl(firebaseAuth)
     }
+
     fun provideFireStoreRepository(firestore: FirebaseFirestore, auth: FirebaseAuth) : FirestoreRepository{
         return FirebaseRepositoryImpl(firestore = firestore, auth = auth)
     }
-    single { provideRepository(get()) }
+
+    single { provideAuthRepository(get()) }
     single { provideFireStoreRepository(get(), get()) }
 
 }
-
-
 
 val authViewModelModule = module {
     viewModel {
@@ -54,9 +55,15 @@ val mainViewModelModule = module {
     }
 }
 
-val overviewViewModelModule = module {
+val conversationsViewModelModule = module {
     viewModel {
         ConversationsViewModel(useCases = get())
+    }
+}
+
+val chatViewModelModule = module {
+    viewModel {
+        ChatViewModel(useCases = get())
     }
 }
 
@@ -159,8 +166,6 @@ val firebaseModule = module {
     fun provideGoogleClient(context: Context, gso: GoogleSignInOptions): GoogleSignInClient{
         return GoogleSignIn.getClient(context, gso)
     }
-
-
 
     single { FirebaseAuth.getInstance() }
 

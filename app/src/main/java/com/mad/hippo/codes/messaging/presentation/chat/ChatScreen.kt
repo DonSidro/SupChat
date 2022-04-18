@@ -1,4 +1,4 @@
-package com.mad.hippo.codes.messaging.presentation.conversation
+package com.mad.hippo.codes.messaging.presentation.chat
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -10,6 +10,7 @@ import android.util.Base64
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Image
@@ -61,18 +62,19 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.mad.hippo.codes.messaging.domain.model.Message
 import com.mad.hippo.codes.messaging.domain.model.MessageType
-import com.mad.hippo.codes.messaging.domain.model.Response
+import com.mad.hippo.codes.messaging.utils.Response
 import com.mad.hippo.codes.messaging.domain.model.User
+import com.mad.hippo.codes.messaging.presentation.chat.components.ChatTopBar
 import com.mad.hippo.codes.messaging.presentation.convervations.ConversationsViewModel
 import com.mad.hippo.codes.messaging.utils.*
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.getViewModel
 import java.io.ByteArrayOutputStream
-import java.nio.ByteBuffer
 
+@RequiresApi(Build.VERSION_CODES.M)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConversationScreen(
+fun ChatScreen(
     id: String?,
     users: String?,
     navController: NavController,
@@ -93,11 +95,7 @@ fun ConversationScreen(
         if (result?.get(0) == currentUser?.uid) result?.get(1).toString() else result?.get(0)
             .toString()
     viewModel.getOtherUser(otherUserId)
-    viewModel.getCurrentUserKey(context = LocalContext.current)
-    viewModel.getCurrentUserPublicKey(context = LocalContext.current)
     val otherUser: User by viewModel.otherUser.collectAsState()
-    val privateKey: String by viewModel.userPrivateKey.collectAsState()
-    val publicKey: String by viewModel.userPublicKey.collectAsState()
 
     LaunchedEffect(true) {
         id?.let { viewModel.getConversationMessages(it) }
@@ -130,7 +128,7 @@ fun ConversationScreen(
 
     Scaffold(
         topBar = {
-            OverviewTopBar()
+            ChatTopBar()
         }
     ) {
 
@@ -159,8 +157,10 @@ fun ConversationScreen(
                             //image
                             viewModel.sendMessage(
                                 Message(
-                                    textReceiver = KeyStoreUtil.encryptRSAToString(it, otherUser.publicKey),
-                                    textSender = KeyStoreUtil.encryptRSAToString(it, publicKey),
+                                    textReceiver = KeyStoreUtil.encryptString(it, otherUser.publicKey)
+                                        .toString(),
+                                    textSender = KeyStoreUtil.encryptString(it, KeyStoreUtil.getPublicKeyAsString())
+                                        .toString(),
                                     time = System.currentTimeMillis().toString(),
                                     senderId = viewModel.currentUser?.uid
                                         ?: "",
@@ -171,8 +171,10 @@ fun ConversationScreen(
                         }else{
                             viewModel.sendMessage(
                                 Message(
-                                    textReceiver = KeyStoreUtil.encryptRSAToString(it, otherUser.publicKey),
-                                    textSender = KeyStoreUtil.encryptRSAToString(it, publicKey),
+                                    textReceiver = KeyStoreUtil.encryptString(it, otherUser.publicKey)
+                                        .toString(),
+                                    textSender = KeyStoreUtil.encryptString(it, KeyStoreUtil.getPublicKeyAsString())
+                                        .toString(),
                                     time = System.currentTimeMillis().toString(),
                                     senderId = viewModel.currentUser?.uid
                                         ?: "",
@@ -724,12 +726,11 @@ fun ClickableMessage(
 
 ) {
     val uriHandler = LocalUriHandler.current
-    val key: String by viewModel.userPrivateKey.collectAsState()
 
     var text = if (isUserMe) {
-        KeyStoreUtil.decryptRSAToString(message.textSender, key)
+        KeyStoreUtil.decryptString(message.textSender)
     } else {
-        KeyStoreUtil.decryptRSAToString(message.textReceiver, key)
+        KeyStoreUtil.decryptString(message.textReceiver)
     }
 
     val styledMessage = messageFormatter(

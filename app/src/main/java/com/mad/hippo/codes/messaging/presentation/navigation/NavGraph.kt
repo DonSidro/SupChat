@@ -8,7 +8,7 @@ import androidx.navigation.NavHostController
 import com.google.accompanist.navigation.animation.AnimatedNavHost
 import com.google.accompanist.navigation.animation.composable
 import com.mad.hippo.codes.messaging.presentation.auth.AuthScreen
-import com.mad.hippo.codes.messaging.presentation.conversation.ConversationScreen
+import com.mad.hippo.codes.messaging.presentation.chat.ChatScreen
 import com.mad.hippo.codes.messaging.presentation.convervations.ConversationsScreen
 import com.mad.hippo.codes.messaging.presentation.profile.ProfileScreen
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -42,25 +42,18 @@ fun NavGraph (
             )
         }
         composable(
-            route = Screen.ChatScreen.route
-        ) {
-            ProfileScreen(
-                navController = navController
-            )
-        }
-        composable(
-            route = Screen.OverviewScreen.route
+            route = Screen.ConversationsScreen.route
         ) {
             ConversationsScreen(
                 navController = navController
             )
         }
         composable(
-            route = Screen.ConversationScreen.route + "/{id}/{list}") { navBackStack ->
+            route = Screen.ChatScreen.route + "/{id}/{list}") { navBackStack ->
             val id = navBackStack.arguments?.getString("id")
             val list = navBackStack.arguments?.getString("list")
 
-            ConversationScreen(id,list,
+            ChatScreen(id,list,
                 navController = navController
             )
         }

@@ -2,7 +2,7 @@ package com.mad.hippo.codes.messaging.domain.repository
 
 import com.mad.hippo.codes.messaging.domain.model.Conversation
 import com.mad.hippo.codes.messaging.domain.model.Message
-import com.mad.hippo.codes.messaging.domain.model.Response
+import com.mad.hippo.codes.messaging.utils.Response
 import com.mad.hippo.codes.messaging.domain.model.User
 import kotlinx.coroutines.flow.Flow
 

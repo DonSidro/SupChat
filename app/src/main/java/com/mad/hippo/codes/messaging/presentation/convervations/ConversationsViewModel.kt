@@ -1,19 +1,19 @@
 package com.mad.hippo.codes.messaging.presentation.convervations
 
 import android.content.Context
-import android.util.Log
-import androidx.compose.ui.platform.LocalContext
-import androidx.datastore.dataStore
+import android.util.Base64
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mad.hippo.codes.messaging.domain.model.Conversation
 import com.mad.hippo.codes.messaging.domain.model.Message
-import com.mad.hippo.codes.messaging.domain.model.Response
+import com.mad.hippo.codes.messaging.utils.Response
 import com.mad.hippo.codes.messaging.domain.model.User
 import com.mad.hippo.codes.messaging.domain.use_case.UseCases
 import com.mad.hippo.codes.messaging.utils.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.security.Key
+import java.security.KeyPair
 
 class ConversationsViewModel (private val useCases: UseCases
 ): ViewModel() {
@@ -27,12 +27,6 @@ class ConversationsViewModel (private val useCases: UseCases
     val latestConversationID = MutableStateFlow<Response<Any>>(Response.IDLE)
 
     val sendStatus = MutableStateFlow<Response<Boolean>>(Response.IDLE)
-
-    private val _userPrivateKey = MutableStateFlow("")
-    val userPrivateKey: StateFlow<String> = _userPrivateKey.asStateFlow()
-
-    private val _userPublicKey = MutableStateFlow("")
-    val userPublicKey: StateFlow<String> = _userPublicKey.asStateFlow()
 
     val currentUser = useCases.getCurrentUser.invoke()
 
@@ -79,15 +73,5 @@ class ConversationsViewModel (private val useCases: UseCases
             _otherUser.emit(it)
         }
     }
-
-     fun getCurrentUserKey(context: Context)  = viewModelScope.launch {
-        val dataStoreManager = DataStoreManager(context.baseDataStore)
-         _userPrivateKey.emit(dataStoreManager.getPreference(PreferenceRequest(PRIVATE_KEY, "")))
-    }
-    fun getCurrentUserPublicKey(context: Context)  = viewModelScope.launch {
-        val dataStoreManager = DataStoreManager(context.baseDataStore)
-        _userPublicKey.emit(dataStoreManager.getPreference(PreferenceRequest(PUBLIC_KEY, "")))
-    }
-
 
 }

@@ -1,4 +1,4 @@
-package com.mad.hippo.codes.messaging.presentation.conversation
+package com.mad.hippo.codes.messaging.presentation.chat.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,7 +15,7 @@ import com.mad.hippo.codes.messaging.presentation.convervations.ConversationsVie
 import org.koin.androidx.compose.getViewModel
 
 @Composable
-fun OverviewTopBar(
+fun ChatTopBar(
     viewModel: ConversationsViewModel = getViewModel(),
 ) {
 
